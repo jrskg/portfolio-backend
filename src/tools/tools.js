@@ -161,7 +161,9 @@ async function sendEmailToSuraj(subject, email, name, message){
     message
   }, true);
   console.log("******************Email sent to Suraj:", isSent);
-  return isSent;
+  return {
+    status: isSent ? "Success" : "Failed"
+  };
 }
 
 export { getGithubRepos, getRecentEvents, sendEmailToSuraj };

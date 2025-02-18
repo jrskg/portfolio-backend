@@ -5,21 +5,14 @@ import { createTransport } from "nodemailer";
 export function extractJSON(response) {
   const jsonRegex = /{.*}/s; // Regex to match JSON objects
   const match = response.match(jsonRegex);
-  if (match) {
-    try {
-      return match[0];
-    } catch (error) {
-      console.error("Failed to parse extracted JSON:", error);
-    }
-  }
-  return null;
+  return match ? match[0] : "{}";
 }
 
 export const initializeUserMapping = () => ({
   [GITHUB_REPOS]: [],
   [GITHUB_EVENTS]: [],
-  getRecentEvents: 0,
-  getGithubRepos: 0,
+  // getRecentEvents: 0,
+  // getGithubRepos: 0,
 });
 
 export const toolsMapping = {
@@ -122,12 +115,9 @@ export const sendEmail = async (toEmail, subject, data, fromAI=false) => {
       </html>
       `,
     });
-
-    console.log("Email sent:", info.response);
     return true;
   } catch (error) {
     console.error(error);
     return false;
   }
-  return false;
 };
