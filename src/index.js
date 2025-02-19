@@ -5,7 +5,7 @@ import cookieParser from "cookie-parser";
 import botRoute from "./routes/bot.route.js";
 import systemRoute from "./routes/system.route.js";
 import { trackUser } from "./middleware/trackUser.js";
-import { clearUserData } from "./controllers/bot.controller.js";
+import { clearAllData, clearUserData } from "./controllers/bot.controller.js";
 import cors from "cors";
 
 dotenv.config();
@@ -33,6 +33,7 @@ app.get("/", (req, res) => {
 });
 
 app.post("/clear-session", trackUser, clearUserData);
+app.get("/owner/clear", clearAllData);
 
 // app.listen(process.env.PORT, () => {
 //   console.log(`Server running on port ${process.env.PORT} in ${process.env.NODE_ENV} mode`);

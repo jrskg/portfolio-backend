@@ -162,3 +162,19 @@ export const clearUserData = (req, res) => {
     .cookie("uniqueId", "", { httpOnly: true, expires: new Date(0), path: "/" })
     .json({ message: "User data cleared" });
 };
+
+export const clearAllData = (req, res) => {
+  const ownerKey = req.query.ownerKey;
+  if(ownerKey !== process.env.OWNER_KEY){
+    return res
+      .status(403)
+      .json({message: "You are not authorized to perform this action"
+    });
+  }
+  usersMapping.clear();
+  messageMapping.clear();
+
+  return res
+    .status(200)
+    .json({ message: "All user data cleared" });
+}
