@@ -25,10 +25,12 @@ export const askBot = async (req, res) => {
 
   const { messages } = messageMapping.get(userId);
   query = query.trim();
-  messages.push({
-    role: "user",
-    parts: [{ text: JSON.stringify({ type: "user", user: query }) }],
-  });
+
+  // Because of duplicate messages
+  // messages.push({
+  //   role: "user",
+  //   parts: [{ text: JSON.stringify({ type: "user", user: query }) }],
+  // });
 
   const performedActionInfo = {
     performed: false,
@@ -58,7 +60,8 @@ export const askBot = async (req, res) => {
           .json({ message: "Invalid response format from AI model" });
       }
 
-      messages.push({ role: "model", parts: [{ text: extracted }] });
+      // Because of duplicate messages
+      // messages.push({ role: "model", parts: [{ text: extracted }] });
 
       let result;
       try {
@@ -146,85 +149,16 @@ export const askBot = async (req, res) => {
 
 export const clearUserData = (req, res) => {
   const userId = req.userId;
-  if(!usersMapping.has(userId)){
+
+  if(!usersMapping.has(userId) || !messageMapping.has(userId)){
     return res.status(404).json({message: "User not found"});
   }
+
   usersMapping.delete(userId);
   messageMapping.delete(userId);
+ 
   return res
     .status(200)
     .cookie("uniqueId", "", { httpOnly: true, expires: new Date(0), path: "/" })
     .json({ message: "User data cleared" });
 };
-
-// export const askBot = async(req, res) => {
-//   let {query} = req.body;
-//   if(!query || query.trim() === ""){
-//     return res.status(400).json({message: "Query is required"});
-//   }
-//   const userId = req.userId;
-//   if(!usersMapping[userId]){
-//     usersMapping[userId] = initializeUserMapping();
-//   }
-//   if(!messageMapping[userId]){
-//     messageMapping[userId] = {messages: []};
-//   }
-//   const {messages} = messageMapping[userId];
-
-//   query = query.trim();
-//   messages.push({role: "user", parts: [{text: JSON.stringify({type: "user", user: query})}]});
-//   const performedActionInfo = {
-//     performed: false,
-//     dataFrom: null,
-//   }
-
-//   while(true){
-//     console.log("Entering while loop");
-//     const chat = ai_model.startChat({
-//       history: messages,
-//       systemInstruction: {role: "system", parts: [{text: SYSTEM_PROMPT}]}
-//     });
-//     let response = await chat.sendMessage(query);
-//     const responseMessage = response.response.text();
-
-//     const extracted = extractJSON(responseMessage);
-//     messages.push({role: "model", parts: [{text: extracted}]});
-
-//     let result = JSON.parse(extracted);
-//     console.log("1************************ result", result);
-
-//     if(result.type === "output"){
-//       console.log("2************************ output");
-//       const output = result.output.replaceAll('<br>', '\n')
-//       const {dataFrom, performed} = performedActionInfo;
-//       if(performed){
-//         return res
-//           .status(200)
-//           .json({message: output, data: usersMapping[userId][dataFrom], dataFrom});
-//       }
-//       return res.status(200).json({message: output});
-//     }
-//     else if(result.type === "action"){
-//       console.log("3************************ action");
-//       const fn = toolsMapping[result.function];
-//       if(!fn) {
-//         return res.status(500).json({message: `Something went wrong (tool not found -> ${result.function})`});
-//       }
-//       const observation = await fn(...result.input);
-//       console.log("4************************ observation", observation);
-
-//       if(observation.dataFrom){
-//         console.log("5************************ dataFrom");
-//         usersMapping[userId][observation.dataFrom] = observation.data;
-//         performedActionInfo.performed = true;
-//         performedActionInfo.dataFrom = observation.dataFrom;
-//       }
-//       const observationMessage = {
-//         type:"observation",
-//         observation: observation
-//       }
-//       console.log("6************************ observationMessage", observationMessage);
-//       messages.push({role: "model", parts: [{text: JSON.stringify(observationMessage)}]});
-//     }
-//   }
-// }
