@@ -34,6 +34,8 @@ app.get("/", (req, res) => {
 
 app.post("/clear-session", trackUser, clearUserData);
 
-app.listen(process.env.PORT, () => {
-  console.log(`Server running on port ${process.env.PORT} in ${process.env.NODE_ENV} mode`);
-});
+// app.listen(process.env.PORT, () => {
+//   console.log(`Server running on port ${process.env.PORT} in ${process.env.NODE_ENV} mode`);
+// });
+
+export default app;
