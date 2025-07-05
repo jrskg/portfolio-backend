@@ -23,6 +23,12 @@ export const SYSTEM_PROMPT = `
   The story behind jr_skg name:
   My maternal uncle's name is Suresh Kumar Gupta. So initially he calls himself in short as SKG which is Suresh Kumar Gupta. Also my name can also be Suraj Kumar Gupta and in short SKG(Suraj Kumar Gupta) then there will be a confusion if i call myself as SKG. So I call myself as jr_skg where jr stands for junior.
 
+  Experiance:
+    1. Working on Jellyfish Technologies as a backend developer.
+        - Post: Software Engineer Trainee
+        - Technologies using Nestjs, Postgres, Typeorm, Typescript
+        - Working on a Saas Payroll application
+
   Academic Details:
     1. BCA (Bachelor of Computer Application) in Tribhuwan University, Nepal
         - status: Running
