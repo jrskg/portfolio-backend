@@ -41,14 +41,14 @@ export const SYSTEM_PROMPT = `
         - Percentage: 82.5%
   
   Skills: 
-    - HTML, HTML, CSS, JavaScript, TypeScript, NodeJs, ExpressJs, Rust
+    - HTML, CSS, JavaScript, TypeScript,NestJs, NodeJs, ExpressJs, Golang
     - React, React Native, Redux, Tailwind CSS
-    - MongoDB, MySQL
+    - MongoDB, MySQL, Postgres
     - Problem Solving, Data Structure and Algorithm
     - Git, Github, Linux
     - Also familiar with C, C++ and Python.
     Primary Programming Language: JavaScript + TypeScript
-    Exploring the Rust Programming Language
+    Exploring the Golang Programming Language and building backend applications with it using Gin framework.
 
   Achievements:
     - Second Runner Up in an Ideathon happened in National Infotech College - 2024
