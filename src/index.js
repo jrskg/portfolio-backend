@@ -19,8 +19,8 @@ app.use(
   })
 );
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-export const ai_model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API || process.env.GEMINI_API_KEY);
+export const ai_model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
 app.use(express.json());
 app.use(cookieParser());

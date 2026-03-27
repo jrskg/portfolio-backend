@@ -23,14 +23,8 @@ export const askBot = async (req, res) => {
     messageMapping.set(userId, { messages: [] });
   }
 
-  const { messages } = messageMapping.get(userId);
+  const userContext = messageMapping.get(userId);
   query = query.trim();
-
-  // Because of duplicate messages
-  // messages.push({
-  //   role: "user",
-  //   parts: [{ text: JSON.stringify({ type: "user", user: query }) }],
-  // });
 
   const performedActionInfo = {
     performed: false,
@@ -40,14 +34,15 @@ export const askBot = async (req, res) => {
   let maxIterations = 5;
   const calledFunctions = new Set();
 
-  while (maxIterations--) {
-    try {
-      const chat = ai_model.startChat({
-        history: messages,
-        systemInstruction: { role: "system", parts: [{ text: SYSTEM_PROMPT }] },
-      });
+  try {
+    const chat = ai_model.startChat({
+      history: userContext.messages,
+      systemInstruction: { role: "system", parts: [{ text: SYSTEM_PROMPT }] },
+    });
 
-      let response = await chat.sendMessage(query);
+    let currentInput = query;
+    while (maxIterations--) {
+      let response = await chat.sendMessage(currentInput);
       const responseMessage = response.response.text();
 
       let extracted;
@@ -59,9 +54,6 @@ export const askBot = async (req, res) => {
           .status(500)
           .json({ message: "Invalid response format from AI model" });
       }
-
-      // Because of duplicate messages
-      // messages.push({ role: "model", parts: [{ text: extracted }] });
 
       let result;
       try {
@@ -83,14 +75,15 @@ export const askBot = async (req, res) => {
         const output = result.output.replaceAll("<br>", "\n");
         const { dataFrom, performed } = performedActionInfo;
 
+        // Update persistent history
+        userContext.messages = await chat.getHistory();
+
         if (performed) {
-          return res
-            .status(200)
-            .json({
-              message: output,
-              data: usersMapping.get(userId)[dataFrom],
-              dataFrom,
-            });
+          return res.status(200).json({
+            message: output,
+            data: usersMapping.get(userId)[dataFrom],
+            dataFrom,
+          });
         }
         return res.status(200).json({ message: output });
       }
@@ -103,8 +96,11 @@ export const askBot = async (req, res) => {
             .json({ message: `Unknown tool function: ${result.function}` });
         }
 
-        if(calledFunctions.has(result.function)){
-          messages.push({role: "user", parts: [{text: JSON.stringify({type: "user", user: "You have already performed this action. Just reply with the output."})}]});
+        if (calledFunctions.has(result.function)) {
+          currentInput = JSON.stringify({
+            type: "user",
+            user: "You have already performed this action. Just reply with the output.",
+          });
           continue;
         }
 
@@ -127,19 +123,22 @@ export const askBot = async (req, res) => {
           performedActionInfo.dataFrom = observation.dataFrom;
         }
 
-        messages.push({
-          role: "model",
-          parts: [
-            { text: JSON.stringify({ type: "observation", observation }) },
-          ],
-        });
+        currentInput = JSON.stringify({ type: "observation", observation });
       }
-    } catch (error) {
-      console.error("Error in chat loop:", error);
-      return res
-        .status(500)
-        .json({ message: "An error occurred while processing the request" });
+
+      if (result.type === "plan") {
+        // If it's just a plan, we don't need to do anything but wait for the next generation
+        // But since we are using sendMessage, we need to provide a trigger if the model didn't automatically continue.
+        // Usually, the model should follow a plan with an action in the same response or we need to prompt it.
+        // If the model only returns a plan, we can just say "Proceed with your plan."
+        currentInput = "Proceed with your plan.";
+      }
     }
+  } catch (error) {
+    console.error("Error in chat loop:", error);
+    return res
+      .status(500)
+      .json({ message: "An error occurred while processing the request" });
   }
 
   return res
