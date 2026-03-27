@@ -10,17 +10,24 @@ import cors from "cors";
 
 dotenv.config();
 
-const allowedOrigins = process.env.FRONTEND_URLS.split(",");
+const allowedOrigins = (process.env.FRONTEND_URLS || "").split(",").map(o => o.trim()).filter(Boolean);
 const app = express();
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   })
 );
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API || process.env.GEMINI_API_KEY);
-export const ai_model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+import { ai_model } from "./ai.js";
 
 app.use(express.json());
 app.use(cookieParser());

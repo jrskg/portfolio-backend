@@ -1,4 +1,4 @@
-import { ai_model } from "../index.js";
+import { ai_model } from "../ai.js";
 import { SYSTEM_PROMPT } from "../systemPrompt.js";
 import {
   extractJSON,
@@ -31,38 +31,38 @@ export const askBot = async (req, res) => {
     dataFrom: null,
   };
 
-  let maxIterations = 5;
+  let maxIterations = 10;
   const calledFunctions = new Set();
 
   try {
-    const chat = ai_model.startChat({
-      history: userContext.messages,
-      systemInstruction: { role: "system", parts: [{ text: SYSTEM_PROMPT }] },
-    });
+    let chat;
+    // Fallback for models/SDK versions that don't support systemInstruction
+    const historyWithSystem = [
+      { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
+      { role: "model", parts: [{ text: "Understood. I will act as Suraj Gupta's AI assistant and respond only in the requested JSON format." }] },
+      ...userContext.messages
+    ];
+    chat = ai_model.startChat({ history: historyWithSystem });
 
-    let currentInput = query;
+    let currentInput = JSON.stringify({ type: "user", user: query });
     while (maxIterations--) {
       let response = await chat.sendMessage(currentInput);
       const responseMessage = response.response.text();
 
-      let extracted;
-      try {
-        extracted = extractJSON(responseMessage);
-      } catch (error) {
-        console.error("Error extracting JSON:", error);
-        return res
-          .status(500)
-          .json({ message: "Invalid response format from AI model" });
-      }
-
       let result;
       try {
-        result = JSON.parse(extracted);
+        result = JSON.parse(responseMessage);
       } catch (error) {
-        console.error("Error parsing JSON result:", error);
-        return res
-          .status(500)
-          .json({ message: "AI response is not valid JSON" });
+        console.error("Error parsing JSON result:", error, "Message:", responseMessage);
+        // Fallback to extraction if parsing fails
+        try {
+          const extracted = extractJSON(responseMessage);
+          result = JSON.parse(extracted);
+        } catch (extractError) {
+          return res
+            .status(500)
+            .json({ message: "AI response is not valid JSON" });
+        }
       }
 
       if (!result.type) {
@@ -72,7 +72,7 @@ export const askBot = async (req, res) => {
       }
 
       if (result.type === "output") {
-        const output = result.output.replaceAll("<br>", "\n");
+        const output = (result.output || "").replaceAll("<br>", "\n");
         const { dataFrom, performed } = performedActionInfo;
 
         // Update persistent history
@@ -108,7 +108,7 @@ export const askBot = async (req, res) => {
 
         let observation;
         try {
-          observation = await fn(...result.input);
+          observation = await fn(...(result.input || []));
         } catch (error) {
           console.error("Error executing function:", error);
           return res
@@ -127,10 +127,6 @@ export const askBot = async (req, res) => {
       }
 
       if (result.type === "plan") {
-        // If it's just a plan, we don't need to do anything but wait for the next generation
-        // But since we are using sendMessage, we need to provide a trigger if the model didn't automatically continue.
-        // Usually, the model should follow a plan with an action in the same response or we need to prompt it.
-        // If the model only returns a plan, we can just say "Proceed with your plan."
         currentInput = "Proceed with your plan.";
       }
     }
