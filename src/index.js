@@ -11,21 +11,36 @@ import cors from "cors";
 dotenv.config();
 
 const allowedOrigins = (process.env.FRONTEND_URLS || "").split(",").map(o => o.trim()).filter(Boolean);
+
 const app = express();
+
+// Robust CORS configuration
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      const isAllowed = allowedOrigins.some((allowedOrigin) => {
+        return origin === allowedOrigin || origin.startsWith(allowedOrigin);
+      });
+
+      if (isAllowed || process.env.NODE_ENV === "development") {
         callback(null, true);
       } else {
+        console.error(`CORS Error: Origin ${origin} not allowed. Allowed: ${allowedOrigins.join(", ")}`);
         callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+    optionsSuccessStatus: 200, // Some legacy browsers choke on 204
   })
 );
+
+// Explicitly handle OPTIONS preflight
+app.options("*", cors());
 
 import { ai_model } from "./ai.js";
 
